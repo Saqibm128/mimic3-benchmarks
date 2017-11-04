@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 import argparse
 import pandas as pd
@@ -27,10 +29,10 @@ def main():
     parser.add_argument('subjects_root_path', type=str,
                         help='Directory containing subject sub-directories.')
     args = parser.parse_args()
-    print args
+    print(args)
     
     subfolders = os.listdir(args.subjects_root_path)
-    subjects = filter(is_subject_folder, subfolders)
+    subjects = list(filter(is_subject_folder, subfolders))
     
     # get mapping for subject
     maps = {}
@@ -48,14 +50,12 @@ def main():
         if (index % 100 == 0):
             print "processed %d / %d" % (index+1, len(subjects)), "         \r",
             print ""   
-        ##For some reason no events file was written
+        ##if for some reason no events file was written
         if os.path.isfile(os.path.join(args.subjects_root_path, subject, "events.csv")): 
             eventsDF = pandas.DataFrame.from_csv(os.path.join(args.subjects_root_path, subject, "events.csv"))
             eventsDF = eventsDF.dropna(axis=0, how="any", subset=["ICUSTAY_ID"])
             joined = eventsDF.join(staysDF, on=["SUBJECT_ID", "HADM_ID"], how="left", rsuffix="_r")
             joined.to_csv(os.path.join(args.subjects_root_path, subject, "events2.csv"))
-    
-         
     
     #print bad_pairs
     print('n_events', n_events,
