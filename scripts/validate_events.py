@@ -40,21 +40,16 @@ def main():
         staysDF = pd.DataFrame.from_csv(os.path.join(args.subjects_root_path, subject, "stays.csv"))
         staysDF.columns = staysDF.columns.str.upper()
         staysDF.dropna(axis=0, how="any", subset=["HADM_ID"])
-        for subject_id in staysDF.index:
-            if not np.isnan(subject_id):
-                subject = staysDF["SUBJECT"][row]
-                hadm_id = staysDF["HADM_ID"][row]
-                if (not subject in maps):
-                    maps[subject] = dict()
-                maps[subject][hadm_id] = icustay_id
         if (index % 100 == 0):
-            print "processed %d / %d" % (index+1, len(subjects)), "         \r",
-            print ""   
+            print("processed %d / %d" % (index+1, len(subjects)), "         \r")
+            print("")   
         ##if for some reason no events file was written
         if os.path.isfile(os.path.join(args.subjects_root_path, subject, "events.csv")): 
-            eventsDF = pandas.DataFrame.from_csv(os.path.join(args.subjects_root_path, subject, "events.csv"))
-            eventsDF = eventsDF.dropna(axis=0, how="any", subset=["ICUSTAY_ID"])
-            joined = eventsDF.join(staysDF, on=["SUBJECT_ID", "HADM_ID"], how="left", rsuffix="_r")
+            eventsDF = pd.DataFrame.from_csv(os.path.join(args.subjects_root_path, subject, "events.csv"))
+            eventsDF = eventsDF.dropna(axis=0, how="any", subset=["HADM_ID", "ICUSTAY_ID"])
+            print eventsDF.index
+            print eventsDF.columns
+            joined = eventsDF.join(staysDF, on=["HADM_ID"], how="left", rsuffix="_r")
             joined.to_csv(os.path.join(args.subjects_root_path, subject, "events2.csv"))
     
     #print bad_pairs
