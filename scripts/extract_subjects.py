@@ -80,3 +80,4 @@ items_to_keep = set(
 for table in args.event_tables:
     read_events_table_and_break_up_by_subject(args.mimic3_path, table, args.output_path, items_to_keep=items_to_keep,
                                               subjects_to_keep=subjects, verbose=args.verbose, use_db=args.use_db)
+print("Done!")
