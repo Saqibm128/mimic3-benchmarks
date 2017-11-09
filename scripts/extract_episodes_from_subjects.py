@@ -21,6 +21,8 @@ args, _ = parser.parse_known_args()
 var_map = read_itemid_to_variable_map(args.variable_map_file)
 variables = var_map.VARIABLE.unique()
 
+ranges = read_variable_ranges(args.reference_range_file)
+
 for subject_dir in os.listdir(args.subjects_root_path):
     dn = os.path.join(args.subjects_root_path, subject_dir)
     try:
@@ -50,7 +52,7 @@ for subject_dir in os.listdir(args.subjects_root_path):
     sys.stdout.write('cleaning and converting to time series...')
     sys.stdout.flush()
     events = map_itemids_to_variables(events, var_map)
-    events = clean_events(events)
+    events = clean_events(events, ranges=ranges)
     if events.shape[0] == 0:
         sys.stdout.write('no valid events!\n')
         continue

@@ -215,10 +215,12 @@ clean_fns = {
     'Weight': clean_weight,
     'Height': clean_height
 }
-def clean_events(events):
+def clean_events(events, ranges=None):
     global cleaning_fns
     for var_name, clean_fn in list(clean_fns.items()):
         idx = (events["VARIABLE"].astype(str) == var_name)
+        if ranges is not None:
+            remove_outliers_for_variable(events, variable, ranges)
         try:
             events.loc[idx, 'VALUE'] = clean_fn(events.loc[idx])
         except Exception as inst:
