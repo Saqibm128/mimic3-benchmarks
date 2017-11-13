@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import numpy as np
 import re
+import traceback
 
 from pandas import DataFrame, Series
 
@@ -107,11 +108,11 @@ def remove_outliers_for_variable(events, variable, ranges):
         return events
     idx = (events.VARIABLE == variable)
     V = events.VALUE[idx]
-    V.ix[V < ranges.OUTLIER_LOW[variable]]  = np.nan
-    V.ix[V > ranges.OUTLIER_HIGH[variable]] = np.nan
-    V.ix[V < ranges.VALID_LOW[variable]]    = ranges.VALID_LOW[variable]
-    V.ix[V > ranges.VALID_HIGH[variable]]   = ranges.VALID_HIGH[variable]
-    events.VALUE.ix[idx] = V
+    V.loc[V < ranges.OUTLIER_LOW[variable]]  = np.nan
+    V.loc[V > ranges.OUTLIER_HIGH[variable]] = np.nan
+    V.loc[V < ranges.VALID_LOW[variable]]    = ranges.VALID_LOW[variable]
+    V.loc[V > ranges.VALID_HIGH[variable]]   = ranges.VALID_HIGH[variable]
+    events.loc[idx, "VALUE"] = V
     return events
 
 # SBP: some are strings of type SBP/DBP
@@ -132,7 +133,7 @@ def clean_crr(df):
     v = Series(np.zeros(df.shape[0]), index=df.index)
     v[:] = np.nan
 
-    # when df.loc[:, 'valuenum'] is empty, dtype can be np.number and comparision with string
+    # when df.loc[:, 'VALUE'] is empty, dtype can be np.number and comparision with string
     # raises an exception, to fix this we change dtype to str
     df.loc[:, 'VALUE'] = df.loc[:, 'VALUE'].astype(str)
 
@@ -142,12 +143,12 @@ def clean_crr(df):
 
 # FIO2: many 0s, some 0<x<0.2 or 1<x<20
 def clean_fio2(df):
-    v = df.loc[:, 'VALUENUM'].astype(np.number)
+    v = df.loc[:, 'VALUE'].astype(np.number)
     idx = df.loc[:, 'VALUEUOM'].fillna('').apply(lambda s: 'torr' not in s.lower()) & (v >1.0)
     v.loc[idx] = v[idx] / 100.
     return v
 
-# GLUCOSE, PH: sometimes have ERROR as valuenum
+# GLUCOSE, PH: sometimes have ERROR as VALUE
 def clean_lab(df):
     v = df.loc[:, 'VALUE']
     idx = v.apply(lambda s: type(s) is str and not re.match('^(\d+(\.\d*)?|\.\d+)$', s))
@@ -168,28 +169,28 @@ def clean_o2sat(df):
 
 # Temperature: map Farenheit to Celsius, some ambiguous 50<x<80
 def clean_temperature(df):
-    v = df.loc[:, 'VALUENUM'].astype(np.number)
-    idx = df.loc[:, 'VALUEUOM'].fillna('').apply(lambda s: 'F' in s.lower()) | df.label.apply(lambda s: 'F' in s.lower()) | (v >= 79)
+    v = df.loc[:, 'VALUE'].astype(np.number)
+    idx = df.loc[:, 'VALUEUOM'].fillna('').apply(lambda s: 'F' in s.lower()) | df["MIMIC_LABEL"].apply(lambda s: 'F' in s.lower()) | (v >= 79)
     v.loc[idx] = (v[idx] - 32) * 5. / 9
     return v
 
 # Weight: some really light/heavy adults: <50 lb, >450 lb, ambiguous oz/lb
 # Children are tough for height, weight
 def clean_weight(df):
-    v = df.loc[:, 'VALUENUM'].astype(np.number)
+    v = df.loc[:, 'VALUE'].astype(np.number)
     # ounces
-    idx = df.loc[:, 'VALUEUOM'].fillna('').apply(lambda s: 'oz' in s.lower()) | df.label.apply(lambda s: 'oz' in s.lower())
+    idx = df.loc[:, 'VALUEUOM'].fillna('').apply(lambda s: 'oz' in s.lower()) | df["MIMIC_LABEL"].apply(lambda s: 'oz' in s.lower())
     v.loc[idx] = v[idx] / 16.
     # pounds
-    idx = idx | df.loc[:, 'VALUEUOM'].fillna('').apply(lambda s: 'lb' in s.lower()) | df.label.apply(lambda s: 'lb' in s.lower())
+    idx = idx | df.loc[:, 'VALUEUOM'].fillna('').apply(lambda s: 'lb' in s.lower()) | df["MIMIC_LABEL"].apply(lambda s: 'lb' in s.lower())
     v.loc[idx] = v[idx] * 0.453592
     return v
 
 # Height: some really short/tall adults: <2 ft, >7 ft)
 # Children are tough for height, weight
 def clean_height(df):
-    v = df.loc[:, 'VALUENUM'].astype(np.number)
-    idx = df.loc[:, 'VALUEUOM'].fillna('').apply(lambda s: 'in' in s.lower()) | df.label.apply(lambda s: 'in' in s.lower())
+    v = df.loc[:, 'VALUE'].astype(np.number)
+    idx = df.loc[:, 'VALUEUOM'].fillna('').apply(lambda s: 'in' in s.lower()) | df["MIMIC_LABEL"].apply(lambda s: 'in' in s.lower())
     v.loc[idx] = np.round(v[idx] * 2.54)
     return v
 
@@ -217,15 +218,15 @@ clean_fns = {
 }
 def clean_events(events, ranges=None):
     global cleaning_fns
+    if ranges is not None:
+        for var_name in events["VARIABLE"]:
+            remove_outliers_for_variable(events, var_name, ranges)
     for var_name, clean_fn in list(clean_fns.items()):
         idx = (events["VARIABLE"].astype(str) == var_name)
-        if ranges is not None:
-            remove_outliers_for_variable(events, variable, ranges)
         try:
-            events.loc[idx, 'VALUE'] = clean_fn(events.loc[idx])
+            events.loc[idx, 'VALUE'] = clean_fn(events[idx])
         except Exception as inst:
             traceback.print_exc()
             print(("Exception in clean_events:", clean_fn.__name__))
             print(("number of rows:", np.sum(idx)))
-            print(("valuenums:", events.ix[idx]))
     return events
