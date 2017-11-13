@@ -107,12 +107,16 @@ def remove_outliers_for_variable(events, variable, ranges):
     if variable not in ranges.index:
         return events
     idx = (events.VARIABLE == variable)
-    V = events.VALUE[idx]
+    try:
+        V = events.VALUE[idx].astype(np.number)
+    except:
+        return events;
     V.loc[V < ranges.OUTLIER_LOW[variable]]  = np.nan
     V.loc[V > ranges.OUTLIER_HIGH[variable]] = np.nan
     V.loc[V < ranges.VALID_LOW[variable]]    = ranges.VALID_LOW[variable]
     V.loc[V > ranges.VALID_HIGH[variable]]   = ranges.VALID_HIGH[variable]
     events.loc[idx, "VALUE"] = V
+    
     return events
 
 # SBP: some are strings of type SBP/DBP
@@ -218,9 +222,6 @@ clean_fns = {
 }
 def clean_events(events, ranges=None):
     global cleaning_fns
-    if ranges is not None:
-        for var_name in events["VARIABLE"]:
-            remove_outliers_for_variable(events, var_name, ranges)
     for var_name, clean_fn in list(clean_fns.items()):
         idx = (events["VARIABLE"].astype(str) == var_name)
         try:
@@ -229,4 +230,7 @@ def clean_events(events, ranges=None):
             traceback.print_exc()
             print(("Exception in clean_events:", clean_fn.__name__))
             print(("number of rows:", np.sum(idx)))
+    if ranges is not None:
+        for var_name in events["VARIABLE"]:
+            remove_outliers_for_variable(events, var_name, ranges)
     return events
