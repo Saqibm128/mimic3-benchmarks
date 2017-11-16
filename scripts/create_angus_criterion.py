@@ -11,24 +11,10 @@ random.seed(49297)
 parser = argparse.ArgumentParser(description="Create data for phenotype classification task.")
 parser.add_argument('root_path', type=str, help="Path to root folder containing train and test sets.")
 parser.add_argument('output_path', type=str, help="Directory where the created data should be stored.")
-parser.add_argument('--phenotype_definitions', '-p', type=str, default='resources/hcup_ccs_2015_definitions.yaml',
-                    help='YAML file with phenotype definitions.')
+
+
 args, _ = parser.parse_known_args()
 
-with open(args.phenotype_definitions) as definitions_file:
-    definitions = yaml.load(definitions_file)
-
-code_to_group = {}
-for group in definitions:
-    codes = definitions[group]['codes']
-    for code in codes:
-        if (code not in code_to_group):
-            code_to_group[code] = group
-        else:
-            assert code_to_group[code] == group
-            
-id_to_group = sorted(definitions.keys())
-group_to_id = dict((x, i) for (i, x) in enumerate(id_to_group))
 
 
 if not os.path.exists(args.output_path):
@@ -92,12 +78,7 @@ def process_partition(partition, eps=1e-6):
                         code = row['ICD9_CODE']
                         group = code_to_group[code]
                         group_id = group_to_id[group]
-                        cur_labels[group_id] = 1
-                
-                cur_labels = [x for (i, x) in enumerate(cur_labels)
-                                 if definitions[id_to_group[i]]['use_in_benchmark']]
-                
-                xty_triples.append((output_ts_filename, los, cur_labels))
+
                 
         if ((patient_index + 1) % 100 == 0):
             print("\rprocessed {} / {} patients".format(patient_index + 1, len(patients)))
