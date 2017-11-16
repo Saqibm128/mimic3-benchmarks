@@ -1,4 +1,8 @@
-# custom
+# Backup files
+*.bak
+*/*.bak
+*/*/*.bak
+## custom
 .idea
 miscellaneous
 notebook

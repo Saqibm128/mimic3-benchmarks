@@ -62,7 +62,7 @@ def main():
                 toProofread = toProofread.dropna(axis=0, how="any", subset=["HADM_ID", "ICUSTAY_ID", "SUBJECT_ID"])
                 
                 recovered += toProofread.shape[0]
-                toWrite = toProofread[["SUBJECT_ID", "HADM_ID", "ICUSTAY_ID", "ITEMID", "CHARTTIME", "VALUE", "VALUEUOM"]] # remove any weird _l columns from merge
+                toWrite = toProofread[["SUBJECT_ID", "HADM_ID", "ICUSTAY_ID", "ITEMID", "CHARTTIME", "VALUE", "VALUEUOM"]] # remove any weird _r columns from merge
                 toWrite.to_csv(os.path.join(args.subjects_root_path, subject, "events2.csv"))
             else:
                 missing_events += 1

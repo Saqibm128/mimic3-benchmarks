@@ -19,7 +19,7 @@ def read_diagnoses(subject_path):
     return DataFrame.from_csv(os.path.join(subject_path, 'diagnoses.csv'), index_col=None)
 
 def read_events(subject_path, remove_null=True):
-    events = DataFrame.from_csv(os.path.join(subject_path, 'events.csv'), index_col=None)
+    events = DataFrame.from_csv(os.path.join(subject_path, 'events2.csv'), index_col=None)
     if remove_null:
         events = events.ix[events.VALUE.notnull()]
     events.CHARTTIME = pd.to_datetime(events.CHARTTIME)
